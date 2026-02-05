@@ -26,7 +26,6 @@ export const demoGenrate = inngest.createFunction(
     const urls = extractUrls(prompt).slice(0, MAX_URL);
     let scrapeContent;
     if (urls.length != 0) {
-      console.log(urls);
       scrapeContent = await step.run("scrape urls", async () => {
         const results = await Promise.all(
           urls.map(async (url) => {
@@ -37,7 +36,6 @@ export const demoGenrate = inngest.createFunction(
             return res.markdown ?? null;
           }),
         );
-        console.log(results);
         return results
           .filter(Boolean)
           .map((s) => s?.trim())
@@ -52,6 +50,11 @@ export const demoGenrate = inngest.createFunction(
       return await generateText({
         model: google("gemini-2.5-flash"),
         prompt: finalPrompt,
+        experimental_telemetry: {
+          isEnabled: true,
+          recordInputs: true,
+          recordOutputs: true,
+        },
       });
     });
   },
