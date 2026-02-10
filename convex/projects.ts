@@ -2,7 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { verifyAuth } from "./auth";
 
-export const create = mutation({
+const create = mutation({
   args: {
     name: v.string(),
   },
@@ -19,7 +19,25 @@ export const create = mutation({
   },
 });
 
-export const get = query({
+const getByID = query({
+  args: {
+    projectId: v.id("projects"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await verifyAuth(ctx);
+    const project = await ctx.db.get(args.projectId);
+
+    if (!project) {
+      throw new Error("Project ID is required");
+    }
+    if (project.ownerId !== identity.subject) {
+      throw new Error("Unauthorized");
+    }
+    return project;
+  },
+});
+
+const getAll = query({
   args: {},
   handler: async (ctx) => {
     const identity = await verifyAuth(ctx);
@@ -27,10 +45,11 @@ export const get = query({
     return await ctx.db
       .query("projects")
       .withIndex("by_owner", (q) => q.eq("ownerId", identity.subject))
+      .order("desc")
       .collect();
   },
 });
-export const getPartial = query({
+const getPartial = query({
   args: {
     limit: v.number(),
   },
@@ -40,6 +59,9 @@ export const getPartial = query({
     return await ctx.db
       .query("projects")
       .withIndex("by_owner", (q) => q.eq("ownerId", identity.subject))
+      .order("desc")
       .take(args.limit);
   },
 });
+
+export { create, getByID, getAll, getPartial };
